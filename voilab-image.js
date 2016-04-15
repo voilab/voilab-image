@@ -118,7 +118,10 @@
                                         if (err) {
                                             return callback(err);
                                         }
-                                        images[c.key || c.name] = url;
+                                        images[c.key || c.name] = {
+                                            url: url,
+                                            filename: filename
+                                        };
                                         callback(null);
                                     });
                                 });
