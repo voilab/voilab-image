@@ -2,11 +2,11 @@
 (function () {
     'use strict';
 
-    module.exports = function (config) {
+    module.exports = function (globalConfig) {
         var lwip = require('lwip'),
             lodash = require('lodash'),
             async = require('async'),
-            os = require('voilab-object-storage')(config),
+            os = require('voilab-object-storage')(globalConfig),
             service = {
 
                 /**
@@ -114,12 +114,12 @@
                                     var compiled = lodash.template(c.format || default_format),
                                         omit_ext = (c.omitExtension || config.omitExtension || false),
                                         filename = compiled(c) + (omit_ext ? '' : ('.' + type));
-                                    os.uploadFromBuffer(buffer, filename, function (err, url) {
+                                    os.uploadFromBuffer(buffer, filename, function (err, path) {
                                         if (err) {
                                             return callback(err);
                                         }
                                         images[c.key || c.name] = {
-                                            url: url,
+                                            url: globalConfig.staticUrl + path,
                                             filename: filename
                                         };
                                         callback(null);
