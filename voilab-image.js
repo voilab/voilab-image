@@ -128,7 +128,7 @@
                             });
                         });
                     });
-                    async.parallel(tasks, function (err) {
+                    async.parallelLimit(tasks, (globalConfig.resizeLimit || 8), function (err) {
                         if (err) {
                             return cb(err);
                         }
