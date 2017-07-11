@@ -3,7 +3,7 @@
     'use strict';
 
     module.exports = function (globalConfig) {
-        var lwip = require('lwip'),
+        var lwip = require('pajk-lwip'),
             lodash = require('lodash'),
             async = require('async'),
             os = require('voilab-object-storage')(globalConfig),
