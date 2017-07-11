@@ -19,7 +19,7 @@
   "dependencies": {
     "async": "1.4.2",
     "lodash": "4.*",
-    "lwip": "0.0.8",
+    "pajk-lwip": "0.2.0",
     "voilab-object-storage": "0.1.3"
   },
   "author": "Joël Poulin",
