@@ -34,7 +34,8 @@
                     var type = source && source.mimetype && source.mimetype.replace('image/', ''),
                         tasks = [],
                         images = {},
-                        default_format = config.format || '';
+                        default_format = config.format || '',
+                        rotate = Number(config.rotate) || false;
 
                     if (lodash.isString(source)) {
                         type = source.split('.').pop();
@@ -62,69 +63,81 @@
                                     batch = image.batch(),
                                     colorPad = c.colorPad || config.colorPad || 'white';
 
-                                // si ni largeur, ni hauteur ne sont fournie, on ne redimmensionne pas l'image
-                                if (width || height) {
-                                    // si les 2 dimensions sont données, il faudra soit croper, soit adapter l'image au rectangle défini par largeur x hauteur
-                                    if (width && height) {
-                                        if (c.crop) {
-                                            // si on souhaite adapter l'image avant de la redimmensionner en vue d'un crop
-                                            if (c.adapt) {
-                                                if (lodash.isObject(c.adapt) && c.adapt.width && c.adapt.height) {
-                                                    batch.contain(c.adapt.width, c.adapt.height, colorPad);
-                                                } else if (lodash.isBoolean(c.adapt)) {
-                                                    batch.contain(Math.max(width, height), Math.max(width, height), colorPad);
+                                // la rotation ne peut pas entrer dans le batch
+                                // car la width et height n'est pas mise à jour
+                                // après rotation. On doit donc passer par le
+                                // callback standard
+                                if (rotate) {
+                                    image.rotate(rotate, 'white', rotatecb);
+                                } else {
+                                    rotatecb(null, image);
+                                }
+
+                                function rotatecb(err, image) {
+                                    // si ni largeur, ni hauteur ne sont fournie, on ne redimmensionne pas l'image
+                                    if (width || height) {
+                                        // si les 2 dimensions sont données, il faudra soit croper, soit adapter l'image au rectangle défini par largeur x hauteur
+                                        if (width && height) {
+                                            if (c.crop) {
+                                                // si on souhaite adapter l'image avant de la redimmensionner en vue d'un crop
+                                                if (c.adapt) {
+                                                    if (lodash.isObject(c.adapt) && c.adapt.width && c.adapt.height) {
+                                                        batch.contain(c.adapt.width, c.adapt.height, colorPad);
+                                                    } else if (lodash.isBoolean(c.adapt)) {
+                                                        batch.contain(Math.max(width, height), Math.max(width, height), colorPad);
+                                                    } else {
+                                                        batch.contain(c.adapt, c.adapt, colorPad);
+                                                    }
                                                 } else {
-                                                    batch.contain(c.adapt, c.adapt, colorPad);
+                                                    dim = service.getCropDimensions(image, width, height);
+                                                    batch.resize(dim.width, dim.height); // l'image sera cropée par la suite
                                                 }
                                             } else {
-                                                dim = service.getCropDimensions(image, width, height);
-                                                batch.resize(dim.width, dim.height); // l'image sera cropée par la suite
+                                                dim = service.adaptDimensions(image, width, height);
+                                                batch.resize(dim.width, dim.height);
                                             }
+
+                                            // Si on n'a qu'une des 2 dimensions, on redimmensionne l'image en fonction de la dimension fournie
                                         } else {
-                                            dim = service.adaptDimensions(image, width, height);
+                                            if (!height) {
+                                                dim = service.getDimensionsWidthMax(image, width);
+                                            } else {
+                                                dim = service.getDimensionsHeightMax(image, height);
+                                            }
                                             batch.resize(dim.width, dim.height);
                                         }
 
-                                        // Si on n'a qu'une des 2 dimensions, on redimmensionne l'image en fonction de la dimension fournie
-                                    } else {
-                                        if (!height) {
-                                            dim = service.getDimensionsWidthMax(image, width);
-                                        } else {
-                                            dim = service.getDimensionsHeightMax(image, height);
-                                        }
-                                        batch.resize(dim.width, dim.height);
-                                    }
-
-                                    // crop centré ou non de l'image
-                                    if (c.crop) {
-                                        if (crop_top > 0 || crop_left > 0) {
-                                            batch.crop(crop_left, crop_top, crop_left + width, crop_top + height);
-                                        } else {
-                                            batch.crop(width, height);
+                                        // crop centré ou non de l'image
+                                        if (c.crop) {
+                                            if (crop_top > 0 || crop_left > 0) {
+                                                batch.crop(crop_left, crop_top, crop_left + width, crop_top + height);
+                                            } else {
+                                                batch.crop(width, height);
+                                            }
                                         }
                                     }
-                                }
 
-                                // récup du buffer temporaire avant envoi sur le cloud
-                                batch.toBuffer(type, function (err, buffer) {
-                                    if (err) {
-                                        return callback(err);
-                                    }
-                                    // renvoi du chemin vers la nouvelle image
-                                    var compiled = lodash.template(c.format || default_format),
-                                        omit_ext = (c.omitExtension || config.omitExtension || false),
-                                        filename = compiled(c) + (omit_ext ? '' : ('.' + type));
-                                    os.uploadFromBuffer(buffer, filename, function (err, path) {
+                                    // récup du buffer temporaire avant envoi sur le cloud
+                                    batch.toBuffer(type, function (err, buffer) {
                                         if (err) {
                                             return callback(err);
                                         }
-                                        images[c.key || c.name] = {
-                                            url: globalConfig.staticUrl + path,
-                                            filename: filename
-                                        };
-                                        callback(null);
+                                        // renvoi du chemin vers la nouvelle image
+                                        var compiled = lodash.template(c.format || default_format),
+                                            omit_ext = (c.omitExtension || config.omitExtension || false),
+                                            filename = compiled(c) + (omit_ext ? '' : ('.' + type));
+                                        os.uploadFromBuffer(buffer, filename, function (err, path) {
+                                            if (err) {
+                                                return callback(err);
+                                            }
+                                            images[c.key || c.name] = {
+                                                url: globalConfig.staticUrl + path,
+                                                filename: filename
+                                            };
+                                            callback(null);
+                                        });
                                     });
-                                });
+                                }
                             });
                         });
                     });
