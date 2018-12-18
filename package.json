@@ -1,6 +1,6 @@
 {
   "name": "voilab-image",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Library that handle image resizing and cropping",
   "main": "voilab-image.js",
   "scripts": {
@@ -17,10 +17,10 @@
     "lwip"
   ],
   "dependencies": {
-    "async": "1.4.2",
-    "lodash": "4.*",
-    "pajk-lwip": "0.2.0",
-    "voilab-object-storage": "0.1.3"
+    "async": "^1.4.2",
+    "lodash": "^4.17.5",
+    "pajk-lwip": "^0.2.0",
+    "voilab-object-storage": "^0.1.3"
   },
   "author": "Joël Poulin",
   "license": "MIT",
