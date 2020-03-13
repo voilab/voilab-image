@@ -6,7 +6,7 @@
         var lwip = require('pajk-lwip'),
             lodash = require('lodash'),
             async = require('async'),
-            os = require('voilab-object-storage')(globalConfig),
+            os = require('@voilab/voilab-object-storage')(globalConfig),
             service = {
 
                 /**
